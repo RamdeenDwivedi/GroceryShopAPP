@@ -6,7 +6,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-class GroceryRepository {
+interface IGroceryRepository {
+    suspend fun addGroceryItem(item: GroceryItem): Result<Unit>
+    fun getGroceryItems(): Flow<List<GroceryItem>>
+    suspend fun updateGroceryItem(item: GroceryItem): Result<Unit>
+    suspend fun updateStock(itemId: String, newStock: Int): Result<Unit>
+    suspend fun deleteGroceryItem(itemId: String): Result<Unit>
+}
+
+class GroceryRepository : IGroceryRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val groceryCollection = db.collection("groceries")
@@ -14,7 +22,7 @@ class GroceryRepository {
     // ==========================================
     // 1. CREATE: Add new grocery item to Firestore
     // ==========================================
-    suspend fun addGroceryItem(item: GroceryItem): Result<Unit> {
+    override suspend fun addGroceryItem(item: GroceryItem): Result<Unit> {
         return try {
             if (item.id.isEmpty()) {
                 // Let Firestore auto-generate a document ID
@@ -32,7 +40,7 @@ class GroceryRepository {
     // ==========================================
     // 2. READ: Listen for real-time stock updates
     // ==========================================
-    fun getGroceryItems(): Flow<List<GroceryItem>> = callbackFlow {
+    override fun getGroceryItems(): Flow<List<GroceryItem>> = callbackFlow {
         val subscription = groceryCollection.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error)
@@ -52,7 +60,7 @@ class GroceryRepository {
     // ==========================================
     // 3. UPDATE: Edit item price, name, or stock
     // ==========================================
-    suspend fun updateGroceryItem(item: GroceryItem): Result<Unit> {
+    override suspend fun updateGroceryItem(item: GroceryItem): Result<Unit> {
         return try {
             groceryCollection.document(item.id).set(item).await()
             Result.success(Unit)
@@ -62,7 +70,7 @@ class GroceryRepository {
     }
 
     // Quick stock update method (useful during sales/checkout)
-    suspend fun updateStock(itemId: String, newStock: Int): Result<Unit> {
+    override suspend fun updateStock(itemId: String, newStock: Int): Result<Unit> {
         return try {
             groceryCollection.document(itemId).update("stock", newStock).await()
             Result.success(Unit)
@@ -74,7 +82,7 @@ class GroceryRepository {
     // ==========================================
     // 4. DELETE: Remove item from inventory
     // ==========================================
-    suspend fun deleteGroceryItem(itemId: String): Result<Unit> {
+    override suspend fun deleteGroceryItem(itemId: String): Result<Unit> {
         return try {
             groceryCollection.document(itemId).delete().await()
             Result.success(Unit)

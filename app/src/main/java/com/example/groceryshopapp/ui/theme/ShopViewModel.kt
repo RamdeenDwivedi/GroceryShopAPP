@@ -4,16 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.groceryshopapp.data.GroceryItem
 import com.example.groceryshopapp.data.GroceryRepository
+import com.example.groceryshopapp.data.IGroceryRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class ShopViewModel(
-    private val repository: GroceryRepository = GroceryRepository()
+    private val repository: IGroceryRepository = GroceryRepository()
 ) : ViewModel() {
 
     // 1. Search query input state
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow = _searchQuery.asStateFlow()
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     // 2. Real-time list directly from Firebase Firestore
     private val _allItems = repository.getGroceryItems()
@@ -24,7 +25,7 @@ class ShopViewModel(
         )
 
     // 3. Dynamic search filter: updates instantly when query or database changes
-    val filteredItems: StateFlow> = combine(_allItems, _searchQuery) { items, query ->
+    val filteredItems: StateFlow<List<GroceryItem>> = combine(_allItems, _searchQuery) { items, query ->
         if (query.isBlank()) {
             items
         } else {
@@ -34,9 +35,9 @@ class ShopViewModel(
             }
         }
     }.stateIn(
-    scope = viewModelScope,
-    started = SharingStarted.WhileSubscribed(5000),
-    initialValue = emptyList()
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
     )
 
     fun onSearchQueryChange(newQuery: String) {

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.groceryshopapp.data.GroceryItem
 import com.example.groceryshopapp.data.GroceryRepository
+import com.example.groceryshopapp.data.IGroceryRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -15,14 +16,14 @@ data class CartItem(
 }
 
 class BillingViewModel(
-    private val repository: GroceryRepository = GroceryRepository()
+    private val repository: IGroceryRepository = GroceryRepository()
 ) : ViewModel() {
 
-    private val _cart = MutableStateFlow>(emptyList())
-    val cart: StateFlow> = _cart.asStateFlow()
+    private val _cart = MutableStateFlow<List<CartItem>>(emptyList())
+    val cart: StateFlow<List<CartItem>> = _cart.asStateFlow()
 
     // Real-time calculated grand total
-    val grandTotal: StateFlow = _cart.map { list ->
+    val grandTotal: StateFlow<Double> = _cart.map { list ->
         list.sumOf { it.totalPrice }
     }.stateIn(
         scope = viewModelScope,

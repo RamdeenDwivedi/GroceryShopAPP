@@ -1,90 +1,37 @@
-name: Build and distribute to Firebase App Distribution
-
-# CI: Build, test and distribute Android AAB to Firebase App Distribution
-# Secrets required (set these in your GitHub repo settings → Settings → Secrets and variables → Actions):
-# - FIREBASE_TOKEN : output of `firebase login:ci`
-# - FIREBASE_APP_ID : Firebase Android App ID (1:...:android:...)
-# Optional secrets:
-# - GOOGLE_SERVICES_JSON : base64 of app/google-services.json (if your build needs it)
-# - KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD : for signing in CI
+name: Firebase App Distribution
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: set up JDK 11
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: '17'
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
 
-      - name: Install Android SDK command-line tools
-        run: |
-          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-latest.zip -O cmdline-tools.zip
-          unzip -q cmdline-tools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
-          mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest" || true
-          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
-        shell: bash
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Add Android tools to PATH
-        run: |
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
-          echo "$ANDROID_SDK_ROOT/emulator" >> $GITHUB_PATH
-          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+      - name: Run Tests
+        run: ./gradlew testDebugUnitTest
 
-      - name: Decode google-services.json (if provided)
-        if: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
-        run: |
-          mkdir -p app
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
+      - name: Build with Gradle
+        run: ./gradlew assembleRelease
 
-      - name: Decode keystore (if provided)
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
-
-      - name: Build release AAB
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || '' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || '' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || '' }}
-        run: |
-          ./gradlew clean bundleRelease --no-daemon
-
-      - name: Run unit tests
-        run: ./gradlew test --no-daemon
-
-      - name: Install firebase-tools
-        run: npm install -g firebase-tools
-
-      - name: Upload to Firebase App Distribution
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-        run: |
-          if [ -z "$FIREBASE_APP_ID" ]; then
-            echo "FIREBASE_APP_ID secret is not set. Aborting upload."
-            exit 1
-          fi
-          AAB_PATH="app/build/outputs/bundle/release/app-release.aab"
-          if [ ! -f "$AAB_PATH" ]; then
-            echo "AAB not found at $AAB_PATH"
-            ls -la app/build/outputs || true
-            exit 1
-          fi
-          firebase appdistribution:distribute "$AAB_PATH" --app "$FIREBASE_APP_ID" --groups "testers" --token "$FIREBASE_TOKEN"
+      - name: Upload artifact to Firebase App Distribution
+        uses: wzieba/Firebase-App-Distribution@v1
+        with:
+          appId: ${{secrets.FIREBASE_APP_ID}}
+          token: ${{secrets.FIREBASE_TOKEN}}
+          groups: testers
+          file: app/build/outputs/apk/release/app-release-unsigned.apk

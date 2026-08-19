@@ -45,13 +45,12 @@ object ReceiptManager {
                 GROCERY STORE RECEIPT
                 Date: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())}
                 
-                
-                    ${cart.joinToString("") {
-            ""
-        }}
-                ${it.item.name} x${it.quantity}$${"%.2f".format(it.totalPrice)}
-                
-                GRAND TOTAL: $${"%.2f".format(total)}
+                <table>
+                    ${cart.joinToString("") { 
+                        "<tr><td>${it.item.name} x${it.quantity}</td><td class='price'>$${"%.2f".format(it.totalPrice)}</td></tr>"
+                    }}
+                </table>
+                <div class="total">GRAND TOTAL: $${"%.2f".format(total)}</div>
                 Thank you! Visit Again.
             
             
