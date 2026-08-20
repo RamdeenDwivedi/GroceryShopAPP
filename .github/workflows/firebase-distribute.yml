@@ -34,14 +34,15 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
         run: |
-          if [ -z "$FIREBASE_TOKEN" ]; then echo "❌ FIREBASE_TOKEN is missing"; exit 1; fi
-          if [ -z "$FIREBASE_APP_ID" ]; then echo "❌ FIREBASE_APP_ID is missing"; exit 1; fi
-          
-          # Trim whitespace from APP_ID just in case
+          # Clean and verify secrets (removes accidental spaces)
+          TOKEN=$(echo "$FIREBASE_TOKEN" | xargs)
           APP_ID=$(echo "$FIREBASE_APP_ID" | xargs)
+          
+          if [ -z "$TOKEN" ]; then echo "❌ FIREBASE_TOKEN is missing"; exit 1; fi
+          if [ -z "$APP_ID" ]; then echo "❌ FIREBASE_APP_ID is missing"; exit 1; fi
           
           sudo npm install -g firebase-tools
           firebase appdistribution:distribute app/build/outputs/apk/release/app-release-unsigned.apk \
             --app "$APP_ID" \
-            --token "$FIREBASE_TOKEN" \
+            --token "$TOKEN" \
             --groups "testers"
