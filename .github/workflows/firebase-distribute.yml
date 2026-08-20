@@ -1,4 +1,4 @@
-# Workflow for Firebase App Distribution
+# Workflow for Firebase App Distribution (Official Gradle Integration)
 name: Firebase App Distribution
 
 on:
@@ -26,35 +26,17 @@ jobs:
       - name: Run Tests
         run: ./gradlew testDebugUnitTest
 
-      - name: Build with Gradle
-        run: ./gradlew assembleRelease
-
-      - name: Upload to Firebase App Distribution
+      - name: Build and Upload to Firebase App Distribution
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: service-account.json
         run: |
-          # Writing the Service Account JSON. We indent it for YAML and then use sed to fix it.
-          cat <<'EOF' > service-account.json
-          {
-            "type": "service_account",
-            "project_id": "groceryshopapp-2a677",
-            "private_key_id": "96f0063436eed5e650b9ab5145341d4e56a94698",
-            "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDuWctDcdJizI3w\njSITWrBp9bN+QAXQS3I27YnBv3Ea/Df6cLx0or5f5b6aPe1RlmfL1v++oXsVnt0S\nePsGGfsAGTSVwcpIynCSTaQXmNWcIIuYdg0Bco7N5XcDhHnnNgN2o1qgOBVf6bBC\nTEbL0rfH2t0vRe69ssVgYD0DFLyexQxcty0P2yFsCGvdk+vk5ms3jeC6IXYJG692\n9B7J2sNs0XcFkb2aBSq7jOdGBGL+BRr3hNpKGi5NhXaz7qRhh9Il3GmN7UTkG5md\ntvnGcrK1mXF4mXaeV6DRfqcjFC+4pcvB10Zk3+z9vQT4IPYY5xcP6nxe40GKY+v4\nrU6Okvq1AgMBAAECggEAZbZ97j8hV7YREEk59GZsCBuoyESL9pJroBMICV0n6Csf\nvEjlsyRL92J0TyAEKR/1FWCfbHs+qkBL+PkVrknh+e3Hqeyz5RI2rchiMQuwhFrD\nF4GxFSAM3sKAYkjjOI6tNbCKGPs16+Muq2wffhVjBe9ZGjZOpjcm0XTgNHNh9qIv\nQ7mflarNKp4d54AqCDlz2XE29nWoyHi7OtLik49TXaqJWKY0/kTuMe8T8abdtOwG\nyFCDo6hpHbpbdtJrPN4qe3dh6c4gPRPs0e8T9Aqemjr7kAzjXk6VpMVI/3KKWFBj\nUU7elTESE4OMB/sL2XwAAC4cwYNr5/8VR9+dwlMMVQKBgQD7WQ9zpWiOnbyrdB5/\nklZ0+qBjPmIhy6Gj3XHNm2EVEk8Ao681yYu53+jpnRhoc9ZdPgUB1MtBLCPngvsu\nd5SVo7ereY95uj+jm0SHEVRYI1SojpsyOdYFCvgLP04sMDlskkRHKfBGzqUVUU4m\neDiQT9OnJ2hLdjg2HB1mXle7uwKBgQDywyaEiqyLhl0s5TJw56lhgFpVHBFaR8UW\n8fD9fFZNi2/Oo95SuAaTn/AhyrD66sGIG8w0pvUMeKEaKQQQlJRdYeou4ypJH/12\n2TFIyF9iceMLSWzNgNZVyJFW0ZuUU5v3CddWz84W5YdzM/jT425298K4ekqI3OIA\nsWms8lFkTwKBgQDqisHLdYdqxbCAAXxQKNr6j8DIuzbROHaeNY7zgNGH2yzTeOqP\nc4IqMdHi5VAYcDeRjMUZX1tHdowOhgAj7Tw+oqZKocWLnoux/Lpmm3osQNPH8kLK\nDIQ08nZh8HHe9CUxtg92pKDtQfl0OgmGBlsp9wOXEEPXXvq3K2cX1mNh7wKBgCE1\nSt6UrbfEYJiUncrOFeCNk03TMhh8etyBqiqyyIeBDIFi7zW3kMa++TVWKdGZLXI2\nA0AsmpbjJX6Tn8e423bOvx882fr40k5gtZo0NsAbvig8GhMejbNcZW1P7Q1kRpCL\nmxZ4BMQjD91VfbNWiDTj/ZIIwItqU8wueLs8xp+HAoGANv/mj1yC6TL528riajGp\nSMl2K203ce4+YFYo+BCgzCE00tGs0KFIH82tSMlKtwYEda49AgTkoVjTZRIML/eP\nPruBgdiG8mMBGNvjkktbXUU1lTld5unTpY1TVrmfk4zG5dXMiL4EKY7Pz7BDMVtJ\nMhnEv1AErBn5bVfMSKHMCK8=\n-----END PRIVATE KEY-----\n",
-            "client_email": "firebase-adminsdk-fbsvc@groceryshopapp-2a677.iam.gserviceaccount.com",
-            "client_id": "108955951926223134447",
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40groceryshopapp-2a677.iam.gserviceaccount.com",
-            "universe_domain": "googleapis.com"
-          }
-          EOF
-          # Fix indentation in the JSON file
-          sed -i 's/^          //' service-account.json
+          # Use single quotes for the JSON to prevent shell interpretation
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
           
-          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/service-account.json
-          sudo npm install -g firebase-tools
+          if [ ! -s service-account.json ]; then
+            echo "❌ FIREBASE_SERVICE_ACCOUNT secret is missing or empty"
+            exit 1
+          fi
           
-          # Run with explicit project ID
-          firebase appdistribution:distribute app/build/outputs/apk/release/app-release-unsigned.apk \
-            --app "1:811367311418:android:c71a16c5e2dd863f40ed03" \
-            --groups "testers" \
-            --project "groceryshopapp-2a677"
+          # Run the official Gradle task for distribution
+          ./gradlew assembleRelease appDistributionUploadRelease
