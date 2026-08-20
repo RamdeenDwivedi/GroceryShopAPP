@@ -28,15 +28,15 @@ jobs:
 
       - name: Build and Upload to Firebase App Distribution
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: service-account.json
+          SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          # Use single quotes for the JSON to prevent shell interpretation
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
+          # Use printf to write the secret safely to an absolute path
+          printf "%s" "$SERVICE_ACCOUNT_JSON" > ${{ github.workspace }}/service-account.json
           
-          if [ ! -s service-account.json ]; then
+          if [ ! -s ${{ github.workspace }}/service-account.json ]; then
             echo "❌ FIREBASE_SERVICE_ACCOUNT secret is missing or empty"
             exit 1
           fi
           
-          # Run the official Gradle task for distribution
-          ./gradlew assembleRelease appDistributionUploadRelease
+          # Run the official Gradle task for distribution, passing the absolute path to the credentials
+          ./gradlew assembleRelease appDistributionUploadRelease -PappDistributionServiceCredentialsFile=${{ github.workspace }}/service-account.json

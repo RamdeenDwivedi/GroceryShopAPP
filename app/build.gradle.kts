@@ -27,6 +27,10 @@ android {
             firebaseAppDistribution {
                 appId = "1:811367311418:android:c71a16c5e2dd863f40ed03"
                 groups = "testers"
+                val credsFile = project.findProperty("appDistributionServiceCredentialsFile")?.toString()
+                if (!credsFile.isNullOrEmpty()) {
+                    serviceCredentialsFile = credsFile
+                }
             }
         }
     }
