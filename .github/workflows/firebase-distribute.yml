@@ -37,7 +37,8 @@ jobs:
           APP_ID="1:811367311418:android:c71a16c5e2dd863f40ed03"
           
           # Writing the Service Account JSON directly to a file
-          cat <<EOF > service-account.json
+          # We use 'EOF' (quoted) to prevent the shell from interpreting backslashes (\n) in the private key.
+          cat <<'EOF' > service-account.json
           {
             "type": "service_account",
             "project_id": "groceryshopapp-2a677",
